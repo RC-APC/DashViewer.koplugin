@@ -133,9 +133,12 @@ function DashViewer:addToReaderMenu(menu_items)
 end
 
 function DashViewer:buildSubmenu()
+    -- 菜单分类：三个「数据源」（即三块看板内容）是最高频操作，直接放在一级，
+    -- 点击=获取最新摘要、长按=删除；低频的导入与说明收进「更多」。
     local t = {}
-
-    -- 各数据源
+    if #self.feeds == 0 then
+        t[#t + 1] = { text = "（暂无数据源，请先添加）", enabled = false }
+    end
     for i, feed in ipairs(self.feeds) do
         t[#t + 1] = {
             text = feed.name,
@@ -148,29 +151,30 @@ function DashViewer:buildSubmenu()
         }
     end
 
-    -- 新增数据源：仅保留「从文件导入」。
+    -- 更多：从文件导入 / 使用说明
     -- 手动输入（软键盘会被本设备遮挡卡死）与快速添加、图片模式，
     -- 均已移除——图片解码在当前定制 KOReader 上会直接让程序崩出。
-    t[#t + 1] = { text = "📄 从文件导入（dashviewer_sources.txt）", callback = function() self:addFromFile() end }
-    t[#t + 1] = {
-        text = "❔ 使用说明",
+    local more = {}
+    more[#more + 1] = { text = "从文件导入（dashviewer_sources.txt）", callback = function() self:addFromFile() end }
+    more[#more + 1] = {
+        text = "使用说明",
         callback = function()
             UIManager:show(InfoMessage:new{
-                text = "• 已内置「肿瘤新药动态」「豆瓣影视新书」「微信读书榜单」，装好即可用\n"
-                    .. "• 点击数据源名称：以纯文字方式获取并显示最新摘要\n"
-                    .. "• 长按数据源名称：删除该数据源\n"
-                    .. "• 新增数据源：在电脑写好 dashviewer_sources.txt\n"
+                text = "- 已内置「肿瘤新药动态」「豆瓣影视新书」「微信读书榜单」，装好即可用\n"
+                    .. "- 点击数据源名称：以纯文字方式获取并显示最新摘要\n"
+                    .. "- 长按数据源名称：删除该数据源\n"
+                    .. "- 新增数据源：在电脑写好 dashviewer_sources.txt\n"
                     .. "   （每行：名称<TAB>URL），推到 KOReader 数据目录后，\n"
-                    .. "   点「从文件导入」即可。\n\n"
+                    .. "   点「更多 -> 从文件导入」即可。\n\n"
                     .. "（本设备图片解码不可用，故仅提供纯文字显示。）\n\n"
                     .. "数据源只需返回 UTF-8 纯文本，与具体业务无关。",
             })
         end,
     }
-
-    if #self.feeds == 0 then
-        t[#t + 1] = { text = "（暂无数据源，请先添加）", enabled = false }
-    end
+    t[#t + 1] = {
+        text = "更多",
+        sub_item_table = more,
+    }
     return t
 end
 
