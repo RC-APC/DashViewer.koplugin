@@ -11,7 +11,7 @@
 ## ✨ 功能
 
 - **通用**：数据源只是一个「返回 UTF-8 纯文本的 URL」，任何看板都能接入。
-- **多源管理**：内置两个数据源，可自由增删，设置持久化到设备本地。
+- **多源管理**：内置三个数据源，可自由增删，设置持久化到设备本地。
 - **纯文字显示**：KOReader 原生文字界面，E Ink 清晰、省电。
 - **从文件批量导入**：在电脑写好 `dashviewer_sources.txt`，推到设备后一键导入，
   完全不依赖屏幕键盘（适配软键盘会被遮挡的定制 KOReader）。
@@ -55,8 +55,12 @@
 ```
 肿瘤新药动态	https://2435cc319f464e0eaaded08a80644163.app.workbuddy.link/digest.txt
 豆瓣影视新书	https://b102a44faaf04c8ebaadb30e4783a396.app.workbuddy.link/digest.txt
+微信读书榜单	https://9c18b55628f847a3a6628b3e2cada237.app.workbuddy.link/weread_digest.txt
 我的基金	https://example.com/my-fund-digest.txt
 ```
+
+> 插件**开箱内置**前三个数据源（肿瘤新药 / 豆瓣影视新书 / 微信读书榜单），安装即可用，无需手动添加。
+> 这些 URL 指向作者本人的 WorkBuddy 公网链接，公开无害；也可长按删除、再导入自己的看板地址。
 
 把文件放进 KOReader 数据目录（与 `dashviewer.lua` 同目录），再点「从文件导入」即可。
 
@@ -82,4 +86,4 @@ DashViewer/
 
 ## 📜 许可
 
-MIT © RC-APC
+MIT © 阮聪
