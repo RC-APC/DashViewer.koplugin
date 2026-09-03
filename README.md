@@ -82,4 +82,4 @@ DashViewer/
 
 ## 📜 许可
 
-MIT © 阮聪
+MIT © RC-APC
