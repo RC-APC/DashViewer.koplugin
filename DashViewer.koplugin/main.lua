@@ -7,7 +7,7 @@ DashViewer —— 通用「看板查看器」KOReader 插件。
        Kindle:  /mnt/us/koreader/plugins/
        Kobo:    /.adds/koreader/plugins/
   2. 重启 KOReader，主菜单「更多工具」里出现「看板查看器」。
-  3. 已内置「肿瘤新药动态」「豆瓣影视新书」两个数据源，开箱即用，无需手动添加。
+  3. 已内置「肿瘤新药动态」「豆瓣影视新书」「微信读书榜单」三个数据源，开箱即用，无需手动添加。
   4. 数据源仅以纯文字方式显示（本定制 KOReader 图片解码不可用，已移除图片模式）。
   5. 新增数据源请用「从文件导入」：在电脑写好 dashviewer_sources.txt
      （每行：名称<TAB>URL），推到 KOReader 数据目录后点「从文件导入」。
@@ -40,7 +40,12 @@ local SETTINGS_FILE = "dashviewer.lua"
 local DEFAULT_FEEDS = {
     { name = "肿瘤新药动态", url = "https://2435cc319f464e0eaaded08a80644163.app.workbuddy.link/digest.txt" },
     { name = "豆瓣影视新书", url = "https://b102a44faaf04c8ebaadb30e4783a396.app.workbuddy.link/digest.txt" },
+    { name = "微信读书榜单", url = "https://9c18b55628f847a3a6628b3e2cada237.app.workbuddy.link/weread_digest.txt" },
 }
+
+-- 内置源随插件升级自动补齐 / 升级 URL。每新增或改 URL 时 +1；
+-- 已对齐版本的不再改动，保留用户自己的增删。
+local DEFAULTS_VERSION = 2
 
 function DashViewer:init()
     self.feeds = {}
@@ -48,36 +53,41 @@ function DashViewer:init()
 
     -- 设置读写整体包一层 pcall：即便存档损坏，也不会让插件在加载期崩溃、从菜单消失
     local ok = pcall(function()
-        -- 仅首次运行写入内置数据源（之后用户的增删都持久化保留）
-        if not self.settings:readSetting("defaults_seeded") then
-            local feeds = self.settings:readSetting("feeds")
-            if type(feeds) ~= "table" then feeds = {} end
+        local feeds = self.settings:readSetting("feeds")
+        if type(feeds) ~= "table" then feeds = {} end
 
-            -- 兼容旧版 OncoDigest：把老的单 url 设置并入 feeds
-            local old_url = self.settings:readSetting("url")
-            if type(old_url) == "string" and old_url ~= "" then
-                local exist = false
-                for _, f in ipairs(feeds) do
-                    if type(f) == "table" and f.url == old_url then exist = true; break end
-                end
-                if not exist then
-                    feeds[#feeds + 1] = { name = "肿瘤新药动态", url = old_url }
-                end
+        -- 兼容旧版 OncoDigest：把老的单 url 设置并入 feeds
+        local old_url = self.settings:readSetting("url")
+        if type(old_url) == "string" and old_url ~= "" then
+            local exist = false
+            for _, f in ipairs(feeds) do
+                if type(f) == "table" and f.url == old_url then exist = true; break end
             end
+            if not exist then
+                feeds[#feeds + 1] = { name = "肿瘤新药动态", url = old_url }
+            end
+        end
 
-            -- 补齐所有内置默认源（按名称去重，不覆盖用户已有）
+        -- 内置源随插件升级自动补齐 / 升级 URL（按名称对齐，避免重复）：
+        -- 名称不存在 -> 新增；名称存在但 URL 变了 -> 升级 URL。
+        -- 仅当已记录的版本号低于当前版本才执行，避免每次启动都写盘、保留用户增删。
+        local cur = tonumber(self.settings:readSetting("defaults_version")) or 0
+        if cur < DEFAULTS_VERSION then
             for _, d in ipairs(DEFAULT_FEEDS) do
-                local has = false
+                local found = false
                 for _, f in ipairs(feeds) do
-                    if type(f) == "table" and f.name == d.name then has = true; break end
+                    if type(f) == "table" and f.name == d.name then
+                        if f.url ~= d.url then f.url = d.url end
+                        found = true
+                        break
+                    end
                 end
-                if not has then
+                if not found then
                     feeds[#feeds + 1] = { name = d.name, url = d.url }
                 end
             end
-
             self.settings:saveSetting("feeds", feeds)
-            self.settings:saveSetting("defaults_seeded", true)
+            self.settings:saveSetting("defaults_version", DEFAULTS_VERSION)
             self.settings:flush()
         end
 
@@ -86,10 +96,11 @@ function DashViewer:init()
     end)
 
     if not ok then
-        -- 存档异常时回退到内置双源，保证插件一定可用、不消失
+        -- 存档异常时回退到内置三源，保证插件一定可用、不消失
         self.feeds = {
             { name = DEFAULT_FEEDS[1].name, url = DEFAULT_FEEDS[1].url },
             { name = DEFAULT_FEEDS[2].name, url = DEFAULT_FEEDS[2].url },
+            { name = DEFAULT_FEEDS[3].name, url = DEFAULT_FEEDS[3].url },
         }
     end
 
@@ -145,7 +156,7 @@ function DashViewer:buildSubmenu()
         text = "❔ 使用说明",
         callback = function()
             UIManager:show(InfoMessage:new{
-                text = "• 已内置「肿瘤新药动态」「豆瓣影视新书」，装好即可用\n"
+                text = "• 已内置「肿瘤新药动态」「豆瓣影视新书」「微信读书榜单」，装好即可用\n"
                     .. "• 点击数据源名称：以纯文字方式获取并显示最新摘要\n"
                     .. "• 长按数据源名称：删除该数据源\n"
                     .. "• 新增数据源：在电脑写好 dashviewer_sources.txt\n"
